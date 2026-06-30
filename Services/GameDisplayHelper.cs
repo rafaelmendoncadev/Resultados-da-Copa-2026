@@ -5,40 +5,54 @@ namespace Resultados_da_Copa_2026.Services;
 public static class GameDisplayHelper
 {
     /// <summary>
-    /// Mapa de cidades-sede da Copa 2026 para o deslocamento em horas
+    /// Mapa de ID do estádio (conforme API worldcup26.ir) para o deslocamento em horas
     /// que deve ser ADICIONADO ao horário local do estádio para obter o
     /// horário de Brasília (BRT, UTC-3).
+    /// 
+    /// IDs 1-16 conforme dados oficiais da Copa 2026.
+    /// 
+    /// Fusos em junho/julho de 2026:
+    ///   EDT (UTC-4) → BRT = local + 1h
+    ///   CDT (UTC-5) → BRT = local + 2h
+    ///   México (UTC-6 fixo) → BRT = local + 3h
+    ///   MDT (UTC-6) → BRT = local + 3h
+    ///   PDT (UTC-7) → BRT = local + 4h
     /// </summary>
-    private static readonly Dictionary<string, int> CityToBrasiliaOffset = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly Dictionary<string, int> StadiumIdToBrasiliaOffset = new(StringComparer.OrdinalIgnoreCase)
     {
         // ═══ EDT (UTC-4) → BRT = local + 1h ═══
         // EUA — Costa Leste
-        { "new york", 1 }, { "east rutherford", 1 },
-        { "philadelphia", 1 }, { "foxborough", 1 }, { "boston", 1 },
-        { "landover", 1 }, { "washington", 1 }, { "baltimore", 1 },
-        { "atlanta", 1 }, { "miami", 1 }, { "orlando", 1 },
+        { "7", 1 },  // Atlanta (Mercedes-Benz Stadium)
+        { "8", 1 },  // Miami (Miami Gardens)
+        { "9", 1 },  // Boston (Foxborough)
+        { "10", 1 }, // Philadelphia
+        { "11", 1 }, // New York/New Jersey (East Rutherford)
         // Canadá — Leste
-        { "toronto", 1 }, { "montreal", 1 },
+        { "12", 1 }, // Toronto (BMO Field)
 
         // ═══ CDT (UTC-5) → BRT = local + 2h ═══
-        // EUA — Central
-        { "dallas", 2 }, { "arlington", 2 },
-        { "houston", 2 }, { "kansas city", 2 }, { "chicago", 2 },
-        { "indianapolis", 2 }, { "nashville", 2 },
-        // México (NÃO observa horário de verão desde 2022 — UTC-6 fixo todo o ano)
-        { "mexico city", 3 }, { "guadalajara", 3 }, { "monterrey", 3 },
+        { "4", 2 },  // Dallas (Arlington, Texas)
+        { "5", 2 },  // Houston
+        { "6", 2 },  // Kansas City
 
-        // ═══ MDT (UTC-6) → BRT = local + 3h ═══
-        { "denver", 3 }, { "salt lake city", 3 },
+        // ═══ México (UTC-6 fixo, sem horário de verão) → BRT = local + 3h ═══
+        { "1", 3 },  // Mexico City (Estadio Azteca)
+        { "2", 3 },  // Guadalajara (Zapopan)
+        { "3", 3 },  // Monterrey (Guadalupe)
 
         // ═══ PDT (UTC-7) → BRT = local + 4h ═══
-        // EUA — Costa Oeste
-        { "los angeles", 4 }, { "inglewood", 4 },
-        { "santa clara", 4 }, { "san francisco", 4 }, { "san jose", 4 },
-        { "seattle", 4 },
-        // Canadá — Oeste
-        { "vancouver", 4 }
+        { "13", 4 }, // Vancouver
+        { "14", 4 }, // Seattle
+        { "15", 4 }, // San Francisco Bay Area (Santa Clara)
+        { "16", 4 }, // Los Angeles (Inglewood)
     };
+
+    private static int GetBrasiliaOffset(string? stadiumId)
+    {
+        if (stadiumId != null && StadiumIdToBrasiliaOffset.TryGetValue(stadiumId, out var offset))
+            return offset;
+        return 0;
+    }
 
     public static string GetStatusText(Models.Game game)
     {
@@ -60,30 +74,28 @@ public static class GameDisplayHelper
         if (!game.IsFinished && !game.IsLive && game.TimeElapsed == "notstarted")
             return "vs";
 
-        return $"{game.HomeScore} - {game.AwayScore}";
+        var score = $"{game.HomeScore} - {game.AwayScore}";
+
+        // Se houve pênaltis, mostra o placar dos pênaltis também
+        if (game.HasPenalties)
+            score += $" ({game.HomePenaltyScore}-{game.AwayPenaltyScore} pen)";
+
+        return score;
     }
 
     /// <summary>
     /// Formata a data exibindo no HORÁRIO DE BRASÍLIA (BRT, UTC-3).
     /// </summary>
-    /// <param name="localDate">Data/hora local do estádio vinda da API.</param>
-    /// <param name="stadiumId">ID do estádio para lookup no mapa de cidades.</param>
-    /// <param name="stadiumCities">Dicionário opcional (stadiumId → nome da cidade).</param>
+    /// <param name="localDate">Data/hora local do estádio vinda da API (formato MM/dd/yyyy HH:mm).</param>
+    /// <param name="stadiumId">ID do estádio (1-16) para lookup de fuso horário.</param>
+    /// <param name="stadiumCities">IGNORADO — mantido apenas para compatibilidade.</param>
     public static string FormatDate(string localDate, string? stadiumId = null,
         Dictionary<string, string>? stadiumCities = null)
     {
         if (!TryParseApiDate(localDate, out var dt))
             return localDate;
 
-        // Descobre o fuso pelo estádio
-        int offsetHours = 0;
-        if (stadiumId != null && stadiumCities != null &&
-            stadiumCities.TryGetValue(stadiumId, out var city) &&
-            CityToBrasiliaOffset.TryGetValue(city, out var found))
-        {
-            offsetHours = found;
-        }
-
+        var offsetHours = GetBrasiliaOffset(stadiumId);
         var brasiliaTime = dt.AddHours(offsetHours);
         return brasiliaTime.ToString("dd/MM/yyyy HH:mm");
     }
@@ -100,7 +112,7 @@ public static class GameDisplayHelper
     }
 
     /// <summary>
-    /// Extrai apenas a data (sem hora) no formato dd/MM.
+    /// Extrai apenas a data (sem hora) no formato dd/MM em Brasília.
     /// </summary>
     public static string FormatShortDate(string localDate, string? stadiumId = null,
         Dictionary<string, string>? stadiumCities = null)
@@ -108,14 +120,7 @@ public static class GameDisplayHelper
         if (!TryParseApiDate(localDate, out var dt))
             return localDate;
 
-        int offsetHours = 0;
-        if (stadiumId != null && stadiumCities != null &&
-            stadiumCities.TryGetValue(stadiumId, out var city) &&
-            CityToBrasiliaOffset.TryGetValue(city, out var found))
-        {
-            offsetHours = found;
-        }
-
+        var offsetHours = GetBrasiliaOffset(stadiumId);
         var brasiliaTime = dt.AddHours(offsetHours);
         return brasiliaTime.ToString("dd/MM");
     }
@@ -168,8 +173,11 @@ public static class GameDisplayHelper
             : TeamNameMapper.ToPortuguese(game.GetAwayDisplayName());
 
     /// <summary>
-    /// Determina qual time venceu o jogo (pelo placar) e retorna o nome em português.
+    /// Determina qual time venceu o jogo e retorna o nome em português.
     /// Retorna null se o jogo não foi encerrado ou se é fase de grupos.
+    /// 
+    /// Para jogos eliminatórios: primeiro verifica o placar normal.
+    /// Se empatado, usa o placar dos pênaltis (se disponível).
     /// </summary>
     private static string? GetWinnerName(Models.Game game)
     {
@@ -183,12 +191,22 @@ public static class GameDisplayHelper
             !int.TryParse(game.AwayScore, out var awayScore))
             return null;
 
+        // 1) Venceu no tempo normal ou na prorrogação
         if (homeScore > awayScore)
             return GetHomeName(game);
         if (awayScore > homeScore)
             return GetAwayName(game);
 
-        // Empate em jogo eliminatório — precisaria de pênaltis, mas sem dados
+        // 2) Empate — decide nos pênaltis
+        if (game.HasPenalties)
+        {
+            if (game.HomePenaltyScore > game.AwayPenaltyScore)
+                return GetHomeName(game);
+            if (game.AwayPenaltyScore > game.HomePenaltyScore)
+                return GetAwayName(game);
+        }
+
+        // Sem dados de pênalti para desempatar
         return null;
     }
 

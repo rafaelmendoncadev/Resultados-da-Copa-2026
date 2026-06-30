@@ -58,6 +58,15 @@ public class Game
     [JsonPropertyName("away_team_label")]
     public string? AwayTeamLabel { get; set; }
 
+    [JsonPropertyName("home_penalty_score")]
+    public int? HomePenaltyScore { get; set; }
+
+    [JsonPropertyName("away_penalty_score")]
+    public int? AwayPenaltyScore { get; set; }
+
+    [JsonIgnore]
+    public bool HasPenalties => HomePenaltyScore.HasValue && AwayPenaltyScore.HasValue;
+
     [JsonIgnore]
     public MatchStage Stage => MatchStageExtensions.FromApiType(Type);
 
