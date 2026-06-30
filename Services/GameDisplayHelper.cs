@@ -166,4 +166,48 @@ public static class GameDisplayHelper
         game.AwayTeamId == "0"
             ? TeamNameMapper.TranslateKnockoutLabel(game.AwayTeamLabel)
             : TeamNameMapper.ToPortuguese(game.GetAwayDisplayName());
+
+    /// <summary>
+    /// Determina qual time venceu o jogo (pelo placar) e retorna o nome em português.
+    /// Retorna null se o jogo não foi encerrado ou se é fase de grupos.
+    /// </summary>
+    private static string? GetWinnerName(Models.Game game)
+    {
+        if (!game.IsFinished)
+            return null;
+
+        if (game.Stage == Models.MatchStage.Group)
+            return null;
+
+        if (!int.TryParse(game.HomeScore, out var homeScore) ||
+            !int.TryParse(game.AwayScore, out var awayScore))
+            return null;
+
+        if (homeScore > awayScore)
+            return GetHomeName(game);
+        if (awayScore > homeScore)
+            return GetAwayName(game);
+
+        // Empate em jogo eliminatório — precisaria de pênaltis, mas sem dados
+        return null;
+    }
+
+    /// <summary>
+    /// Retorna o texto de classificação para jogos eliminatórios encerrados.
+    /// Ex: "✓ Brasil classificou!", "✓ Argentina é campeã mundial!", "✓ França é 3º lugar!"
+    /// </summary>
+    public static string GetQualificationText(Models.Game game)
+    {
+        var winner = GetWinnerName(game);
+        if (winner == null)
+            return string.Empty;
+
+        var stage = game.Stage;
+        if (stage == Models.MatchStage.Final)
+            return $"✓ {winner} é campeão mundial!";
+        if (stage == Models.MatchStage.ThirdPlace)
+            return $"✓ {winner} é 3º lugar!";
+
+        return $"✓ {winner} classificou!";
+    }
 }

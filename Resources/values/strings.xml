@@ -9,7 +9,7 @@
     <string name="retry">Tentar novamente</string>
     <string name="no_games">Nenhum jogo encontrado</string>
     <string name="no_standings">Classificação indisponível</string>
-    <string name="last_update">Última atualização: %1$s</string>
+    <string name="last_update">Última atualização: {0}</string>
     <string name="offline_mode">Modo offline — dados em cache</string>
     <string name="filter_all">Todos</string>
     <string name="group_label">Grupo %1$s</string>
@@ -28,7 +28,7 @@
     <string name="filter_live">Ao Vivo</string>
     <string name="filter_date_all">Todas as datas</string>
     <string name="date_picker_label">📅  Selecionar data</string>
-    <string name="date_picker_selected">📅  %1$s</string>
+    <string name="date_picker_selected">📅  {0}</string>
     <string name="date_picker_clear">✕  Limpar filtro</string>
     <string name="calendar_only_june_july">Selecione uma data entre junho e julho de 2026</string>
     <string name="vs">vs</string>

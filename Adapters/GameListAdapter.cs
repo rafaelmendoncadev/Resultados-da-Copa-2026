@@ -68,9 +68,15 @@ public class GameListAdapter : RecyclerView.Adapter
             gameHolder.AwayTeamText.Text = GameDisplayHelper.GetAwayName(game);
             gameHolder.ScoreText.Text = GameDisplayHelper.FormatScore(game);
             gameHolder.DateText.Text = GameDisplayHelper.FormatDate(game.LocalDate, game.StadiumId, StadiumCities);
-            gameHolder.StageText.Text = game.Stage == MatchStage.Group
+            var stageText = game.Stage == MatchStage.Group
                 ? $"Grupo {game.Group} · Rodada {game.Matchday}"
                 : game.Stage.ToDisplayName();
+
+            var qualification = GameDisplayHelper.GetQualificationText(game);
+            if (!string.IsNullOrEmpty(qualification))
+                stageText += $"\n{qualification}";
+
+            gameHolder.StageText.Text = stageText;
             gameHolder.LiveBadge.Visibility = game.IsLive ? ViewStates.Visible : ViewStates.Gone;
             gameHolder.BoundGame = game;
         }

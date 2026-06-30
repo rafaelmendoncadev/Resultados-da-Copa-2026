@@ -55,7 +55,11 @@ public class GameDetailActivity : AppCompatActivity
         FindViewById<TextView>(Resource.Id.homeTeamText)!.Text = GameDisplayHelper.GetHomeName(game);
         FindViewById<TextView>(Resource.Id.awayTeamText)!.Text = GameDisplayHelper.GetAwayName(game);
         FindViewById<TextView>(Resource.Id.scoreText)!.Text = GameDisplayHelper.FormatScore(game);
-        FindViewById<TextView>(Resource.Id.stageText)!.Text = game.Stage.ToDisplayName();
+        var stageDisplay = game.Stage.ToDisplayName();
+        var qualification = GameDisplayHelper.GetQualificationText(game);
+        if (!string.IsNullOrEmpty(qualification))
+            stageDisplay += $"\n{qualification}";
+        FindViewById<TextView>(Resource.Id.stageText)!.Text = stageDisplay;
         FindViewById<TextView>(Resource.Id.statusText)!.Text = GameDisplayHelper.GetStatusText(game);
         FindViewById<TextView>(Resource.Id.dateText)!.Text = GameDisplayHelper.FormatDate(game.LocalDate, game.StadiumId, stadiumCities);
         FindViewById<TextView>(Resource.Id.stadiumText)!.Text = stadiumName ?? $"Estádio #{game.StadiumId}";
