@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="wc_green_dark">#1B5E20</color>
+    <color name="wc_green">#2E7D32</color>
+    <color name="wc_gold">#FFD700</color>
+    <color name="wc_gold_dark">#F9A825</color>
+    <color name="wc_white">#FFFFFF</color>
+    <color name="wc_background">#F5F5F5</color>
+    <color name="wc_text_primary">#212121</color>
+    <color name="wc_text_secondary">#757575</color>
+    <color name="wc_live">#D32F2F</color>
+    <color name="wc_card">#FFFFFF</color>
+    <color name="wc_divider">#E0E0E0</color>
+</resources>

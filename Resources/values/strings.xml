@@ -1,4 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Resultados_da_Copa_2026</string>
-    <string name="app_text">Hello, Android!</string>
+    <string name="app_name">Copa 2026</string>
+    <string name="tab_games">Jogos</string>
+    <string name="tab_standings">Classificação</string>
+    <string name="tab_knockout">Eliminatórias</string>
+    <string name="loading">Carregando...</string>
+    <string name="error_loading">Erro ao carregar dados</string>
+    <string name="retry">Tentar novamente</string>
+    <string name="no_games">Nenhum jogo encontrado</string>
+    <string name="no_standings">Classificação indisponível</string>
+    <string name="last_update">Última atualização: %1$s</string>
+    <string name="offline_mode">Modo offline — dados em cache</string>
+    <string name="filter_all">Todos</string>
+    <string name="group_label">Grupo %1$s</string>
+    <string name="matchday_label">Rodada %1$s</string>
+    <string name="stadium">Estádio</string>
+    <string name="date_time">Data e hora</string>
+    <string name="status">Status</string>
+    <string name="scorers">Artilheiros</string>
+    <string name="no_scorers">Sem gols registrados</string>
+    <string name="standing_pos">#</string>
+    <string name="standing_team">Time</string>
+    <string name="standing_pts">Pts</string>
+    <string name="standing_mp">J</string>
+    <string name="standing_gd">SG</string>
+    <string name="live_badge">AO VIVO</string>
+    <string name="filter_live">Ao Vivo</string>
+    <string name="filter_date_all">Todas as datas</string>
+    <string name="vs">vs</string>
 </resources>

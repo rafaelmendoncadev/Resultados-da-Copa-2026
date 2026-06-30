@@ -1,13 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
-    <TextView 
-        android:layout_width="wrap_content"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/wc_background">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/wc_green_dark"
+        app:title="@string/app_name"
+        app:titleTextColor="@color/wc_white" />
+
+    <TextView
+        android:id="@+id/statusBanner"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:text="@string/app_text"
-    />
-</RelativeLayout>
+        android:background="@color/wc_gold_dark"
+        android:padding="8dp"
+        android:textColor="@color/wc_text_primary"
+        android:textSize="12sp"
+        android:visibility="gone"
+        android:gravity="center" />
+
+    <FrameLayout
+        android:id="@+id/fragmentContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNavigation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/wc_white"
+        app:itemIconTint="@color/wc_green_dark"
+        app:itemTextColor="@color/wc_green_dark"
+        app:menu="@menu/bottom_nav_menu" />
+
+</LinearLayout>

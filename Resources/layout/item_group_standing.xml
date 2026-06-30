@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="@color/wc_card">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/groupTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/wc_green_dark"
+            android:layout_marginBottom="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingVertical="4dp"
+            android:background="@color/wc_background">
+
+            <TextView android:layout_width="24dp" android:layout_height="wrap_content" android:text="#" android:textStyle="bold" android:textSize="12sp" />
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/standing_team" android:textStyle="bold" android:textSize="12sp" />
+            <TextView android:layout_width="28dp" android:layout_height="wrap_content" android:text="@string/standing_mp" android:textStyle="bold" android:textSize="12sp" android:gravity="center" />
+            <TextView android:layout_width="32dp" android:layout_height="wrap_content" android:text="@string/standing_gd" android:textStyle="bold" android:textSize="12sp" android:gravity="center" />
+            <TextView android:layout_width="32dp" android:layout_height="wrap_content" android:text="@string/standing_pts" android:textStyle="bold" android:textSize="12sp" android:gravity="center" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/standingsContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

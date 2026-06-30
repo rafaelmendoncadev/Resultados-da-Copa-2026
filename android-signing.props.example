@@ -1,0 +1,15 @@
+<!--
+  Copie este arquivo para android-signing.props e preencha a senha.
+  O arquivo android-signing.props está no .gitignore e não será commitado.
+
+  cp android-signing.props.example android-signing.props
+-->
+<Project>
+  <PropertyGroup>
+    <AndroidKeyStore>true</AndroidKeyStore>
+    <AndroidSigningKeyStore>$(MSBuildProjectDirectory)\copa2026-release.keystore</AndroidSigningKeyStore>
+    <AndroidSigningKeyAlias>copa2026</AndroidSigningKeyAlias>
+    <AndroidSigningKeyPass>SUA_SENHA_AQUI</AndroidSigningKeyPass>
+    <AndroidSigningStorePass>SUA_SENHA_AQUI</AndroidSigningStorePass>
+  </PropertyGroup>
+</Project>
