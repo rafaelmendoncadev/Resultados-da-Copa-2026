@@ -24,13 +24,12 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
     private global::Google.Android.Material.Button.MaterialButton? _datePickerButton;
     private Dictionary<string, string>? _stadiumCities;
     private List<Game> _knockoutGames = [];
-    private DateTime? _selectedDate;   // data selecionada no calendário (em Brasília)
+    private DateTime? _selectedDate;
     private bool _showLiveOnly;
 
-    // Ano da Copa 2026
     private const int CopaYear = 2026;
-    private const int CopaMonthStart = 6;  // Junho
-    private const int CopaMonthEnd = 7;    // Julho
+    private const int CopaMonthStart = 6;
+    private const int CopaMonthEnd = 7;
 
     public event Action<DataResult<List<Game>>>? DataLoaded;
 
@@ -60,7 +59,6 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
         _liveChip = view.FindViewById<Chip>(Resource.Id.liveChip);
         _datePickerButton = view.FindViewById<global::Google.Android.Material.Button.MaterialButton>(Resource.Id.datePickerButton);
 
-        // Adapter da lista de jogos
         _adapter = new GameListAdapter();
         _adapter.ItemClick += game =>
         {
@@ -71,20 +69,19 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
         _recyclerView!.SetLayoutManager(new LinearLayoutManager(RequireContext()));
         _recyclerView.SetAdapter(_adapter);
 
-        // Botão do calendário
         if (_datePickerButton != null)
         {
             UpdateDateButtonText();
             _datePickerButton.Click += OnDatePickerButtonClick;
         }
 
-        // Chip Ao Vivo
         if (_liveChip != null)
         {
             _liveChip.Checked = _showLiveOnly;
             _liveChip.Click += (_, _) =>
             {
-                _showLiveOnly = _liveChip!.Checked;
+                _showLiveOnly = !_showLiveOnly;
+                _liveChip.Checked = _showLiveOnly;
                 if (_showLiveOnly)
                 {
                     _selectedDate = null;
@@ -102,8 +99,6 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
 
         _ = LoadDataAsync();
     }
-
-    // ────────── Carregamento de dados ──────────
 
     private async Task LoadDataAsync(bool forceRefresh = false)
     {
@@ -154,10 +149,6 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
         }
     }
 
-    // ────────── DatePickerDialog ──────────
-
-    // ────────── DatePicker via AlertDialog ──────────
-
     private void OnDatePickerButtonClick(object? sender, EventArgs e)
     {
         if (_selectedDate.HasValue)
@@ -176,7 +167,7 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
 
         var initialYear = CopaYear;
         var initialMonth = now.Year == CopaYear && now.Month >= CopaMonthStart && now.Month <= CopaMonthEnd
-            ? now.Month - 1  // DatePicker usa 0-based para mês
+            ? now.Month - 1
             : CopaMonthStart - 1;
         var initialDay = now.Year == CopaYear && (now.Month - 1) == initialMonth
             ? Math.Clamp(now.Day, 1, 30)
@@ -185,7 +176,6 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
         var datePicker = new DatePicker(RequireContext());
         datePicker.UpdateDate(initialYear, initialMonth, initialDay);
 
-        // Limita o calendário a Junho e Julho de 2026
         var minDate = new DateTime(CopaYear, CopaMonthStart, 1, 0, 0, 0, DateTimeKind.Utc);
         var maxDate = new DateTime(CopaYear, CopaMonthEnd, 31, 23, 59, 59, DateTimeKind.Utc);
         datePicker.MinDate = (long)(minDate - epoch).TotalMilliseconds;
@@ -234,7 +224,6 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
 
     private void OnDateSelected(int year, int month, int dayOfMonth)
     {
-        // month do DatePicker é 0-based (Janeiro = 0)
         var selected = new DateTime(year, month + 1, dayOfMonth);
 
         if (selected.Year != CopaYear ||
@@ -272,8 +261,6 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
         }
     }
 
-    // ────────── Aplicar filtro ──────────
-
     private void ApplyFilter()
     {
         IEnumerable<Game> filtered = _knockoutGames;
@@ -284,7 +271,6 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
         }
         else if (_selectedDate.HasValue)
         {
-            // Filtra por data (dd/MM em Brasília)
             var targetKey = _selectedDate.Value.ToString("dd/MM");
             filtered = filtered.Where(g =>
             {
@@ -293,7 +279,6 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
             });
         }
 
-        // Monta itens
         var items = new List<GameListItem>();
 
         if (_showLiveOnly)
@@ -303,7 +288,6 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
         }
         else if (_selectedDate.HasValue)
         {
-            // Filtrado por data: agrupa por fase
             foreach (var stageGroup in filtered
                 .GroupBy(g => g.Stage)
                 .OrderBy(g => g.Key.SortOrder()))
@@ -319,7 +303,6 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
         }
         else
         {
-            // Todas: agrupa por fase (comportamento original)
             foreach (var stageGroup in filtered
                 .GroupBy(g => g.Stage)
                 .OrderBy(g => g.Key.SortOrder()))
@@ -337,8 +320,6 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
         if (_adapter != null)
             _adapter.SetItems(items);
     }
-
-    // ────────── Helpers de UI ──────────
 
     private void ShowLoading(bool show)
     {
