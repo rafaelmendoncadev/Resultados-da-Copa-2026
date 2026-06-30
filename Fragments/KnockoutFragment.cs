@@ -22,7 +22,6 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
     private View? _errorLayout;
     private Chip? _liveChip;
     private global::Google.Android.Material.Button.MaterialButton? _datePickerButton;
-    private Dictionary<string, string>? _stadiumCities;
     private List<Game> _knockoutGames = [];
     private DateTime? _selectedDate;
     private bool _showLiveOnly;
@@ -149,16 +148,22 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
                 if (ct.IsCancellationRequested)
                     break;
 
-                // Só atualiza se houver jogos ao vivo
-                if (_knockoutGames.Any(g => g.IsLive))
+                var hasLiveGames = _knockoutGames.Any(g => g.IsLive);
+
+                if (hasLiveGames)
                 {
+                    // Atualização em tempo real com indicador visual
                     RunOnUi(() =>
                     {
                         if (_swipeRefresh != null && !_swipeRefresh.Refreshing)
                             _swipeRefresh.Refreshing = true;
                     });
-
                     await LoadDataAsync(forceRefresh: true);
+                }
+                else
+                {
+                    // Verificação silenciosa no cache para ver se novos jogos começaram
+                    await RefreshFromCacheSilentAsync();
                 }
             }
             catch (TaskCanceledException)
@@ -172,6 +177,44 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
         }
     }
 
+    /// <summary>
+    /// Recarrega dados do cache sem mostrar indicador de carregamento.
+    /// Se encontrar jogos ao vivo, aplica o filtro para que apareçam na lista.
+    /// </summary>
+    private async Task RefreshFromCacheSilentAsync()
+    {
+        try
+        {
+            var result = await _repository!.GetGamesAsync(RequireContext(), forceRefresh: false);
+            var liveGames = result.Data
+                .Where(g => KnockoutStages.Contains(g.Stage) && g.IsLive)
+                .ToList();
+
+            if (liveGames.Count > 0)
+            {
+                // Encontrou jogos ao vivo no cache — atualiza a lista e força refresh da API
+                _knockoutGames = result.Data
+                    .Where(g => KnockoutStages.Contains(g.Stage))
+                    .OrderBy(g => g.Stage.SortOrder())
+                    .ThenBy(g => int.TryParse(g.Id, out var id) ? id : 999)
+                    .ToList();
+
+                RunOnUi(() =>
+                {
+                    if (_swipeRefresh != null && !_swipeRefresh.Refreshing)
+                        _swipeRefresh.Refreshing = true;
+                });
+
+                // Agora faz um force refresh para dados em tempo real
+                await LoadDataAsync(forceRefresh: true);
+            }
+        }
+        catch
+        {
+            // Silencia erros na verificação em background
+        }
+    }
+
     // ────────── Carregamento de dados ──────────
 
     private async Task LoadDataAsync(bool forceRefresh = false)
@@ -181,10 +224,6 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
         {
             var result = await _repository!.GetGamesAsync(RequireContext(), forceRefresh);
 
-            _stadiumCities = (await _repository.GetStadiumsAsync(RequireContext(), forceRefresh)).Data
-                .Where(s => s.CityEn != null)
-                .ToDictionary(s => s.Id, s => s.CityEn!);
-
             _knockoutGames = result.Data
                 .Where(g => KnockoutStages.Contains(g.Stage))
                 .OrderBy(g => g.Stage.SortOrder())
@@ -193,9 +232,6 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
 
             RunOnUi(() =>
             {
-                if (_adapter != null)
-                    _adapter.StadiumCities = _stadiumCities;
-
                 ApplyFilter();
 
                 DataLoaded?.Invoke(new DataResult<List<Game>>
@@ -352,7 +388,7 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
             var targetKey = _selectedDate.Value.ToString("dd/MM");
             filtered = filtered.Where(g =>
             {
-                var dateKey = GameDisplayHelper.FormatShortDate(g.LocalDate, g.StadiumId, _stadiumCities);
+                var dateKey = GameDisplayHelper.FormatShortDate(g.LocalDate);
                 return dateKey == targetKey;
             });
         }

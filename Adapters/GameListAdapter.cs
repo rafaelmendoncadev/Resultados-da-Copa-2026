@@ -15,10 +15,6 @@ public class GameListItem
 public class GameListAdapter : RecyclerView.Adapter
 {
     private readonly List<GameListItem> _items = [];
-    /// <summary>
-    /// Mapa opcional stadiumId → nome da cidade (para conversão de fuso horário).
-    /// </summary>
-    public Dictionary<string, string>? StadiumCities { get; set; }
     public event Action<Game>? ItemClick;
 
     public void SetItems(IEnumerable<GameListItem> items)
@@ -67,7 +63,7 @@ public class GameListAdapter : RecyclerView.Adapter
             gameHolder.HomeTeamText.Text = GameDisplayHelper.GetHomeName(game);
             gameHolder.AwayTeamText.Text = GameDisplayHelper.GetAwayName(game);
             gameHolder.ScoreText.Text = GameDisplayHelper.FormatScore(game);
-            gameHolder.DateText.Text = GameDisplayHelper.FormatDate(game.LocalDate, game.StadiumId, StadiumCities);
+            gameHolder.DateText.Text = GameDisplayHelper.FormatDate(game.LocalDate);
             var stageText = game.Stage == MatchStage.Group
                 ? $"Grupo {game.Group} · Rodada {game.Matchday}"
                 : game.Stage.ToDisplayName();

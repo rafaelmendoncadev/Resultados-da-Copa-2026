@@ -20,7 +20,6 @@ public class GamesFragment : AndroidX.Fragment.App.Fragment
     private View? _errorLayout;
     private ChipGroup? _groupChipGroup;
     private List<Game> _allGames = [];
-    private Dictionary<string, string>? _stadiumCities;
     private string? _selectedGroup;
 
     public event Action<DataResult<List<Game>>>? DataLoaded;
@@ -68,15 +67,8 @@ public class GamesFragment : AndroidX.Fragment.App.Fragment
             var result = await _repository!.GetGamesAsync(RequireContext(), forceRefresh);
             _allGames = result.Data.Where(g => g.Stage == MatchStage.Group).ToList();
 
-            _stadiumCities = (await _repository.GetStadiumsAsync(RequireContext(), forceRefresh)).Data
-                .Where(s => s.CityEn != null)
-                .ToDictionary(s => s.Id, s => s.CityEn!);
-
             RunOnUi(() =>
             {
-                if (_adapter != null)
-                    _adapter.StadiumCities = _stadiumCities;
-
                 DataLoaded?.Invoke(result);
                 SetupGroupChips();
                 ApplyFilter();

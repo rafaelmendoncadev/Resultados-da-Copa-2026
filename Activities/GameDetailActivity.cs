@@ -36,13 +36,9 @@ public class GameDetailActivity : AppCompatActivity
                 return;
             }
 
-            var stadiums = await repository.GetStadiumsAsync(this);
-            var stadiumCities = stadiums.Data
-                .Where(s => s.CityEn != null)
-                .ToDictionary(s => s.Id, s => s.CityEn!);
-            var stadiumName = stadiums.Data.FirstOrDefault(s => s.Id == game.StadiumId)?.NameEn;
+            var stadiumName = await repository.GetStadiumNameAsync(this, game.StadiumId);
 
-            UiHelper.RunOnUiThreadSafe(this, () => BindGame(game, stadiumName, stadiumCities));
+            UiHelper.RunOnUiThreadSafe(this, () => BindGame(game, stadiumName));
         }
         catch
         {
@@ -50,7 +46,7 @@ public class GameDetailActivity : AppCompatActivity
         }
     }
 
-    private void BindGame(Models.Game game, string? stadiumName, Dictionary<string, string> stadiumCities)
+    private void BindGame(Models.Game game, string? stadiumName)
     {
         FindViewById<TextView>(Resource.Id.homeTeamText)!.Text = GameDisplayHelper.GetHomeName(game);
         FindViewById<TextView>(Resource.Id.awayTeamText)!.Text = GameDisplayHelper.GetAwayName(game);
@@ -61,7 +57,7 @@ public class GameDetailActivity : AppCompatActivity
             stageDisplay += $"\n{qualification}";
         FindViewById<TextView>(Resource.Id.stageText)!.Text = stageDisplay;
         FindViewById<TextView>(Resource.Id.statusText)!.Text = GameDisplayHelper.GetStatusText(game);
-        FindViewById<TextView>(Resource.Id.dateText)!.Text = GameDisplayHelper.FormatDate(game.LocalDate, game.StadiumId, stadiumCities);
+        FindViewById<TextView>(Resource.Id.dateText)!.Text = GameDisplayHelper.FormatDate(game.LocalDate);
         FindViewById<TextView>(Resource.Id.stadiumText)!.Text = stadiumName ?? $"Estádio #{game.StadiumId}";
 
         var liveBadge = FindViewById<TextView>(Resource.Id.liveBadge)!;
