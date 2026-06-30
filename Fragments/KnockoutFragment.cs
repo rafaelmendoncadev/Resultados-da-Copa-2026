@@ -27,6 +27,10 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
     private DateTime? _selectedDate;
     private bool _showLiveOnly;
 
+    // Auto-refresh para jogos ao vivo
+    private CancellationTokenSource? _refreshCts;
+    private const int LiveRefreshIntervalMs = 60_000; // 60 segundos
+
     private const int CopaYear = 2026;
     private const int CopaMonthStart = 6;
     private const int CopaMonthEnd = 7;
@@ -100,6 +104,76 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
         _ = LoadDataAsync();
     }
 
+    // ────────── Auto-refresh para jogos ao vivo ──────────
+
+    public override void OnResume()
+    {
+        base.OnResume();
+        StartAutoRefresh();
+    }
+
+    public override void OnPause()
+    {
+        base.OnPause();
+        StopAutoRefresh();
+    }
+
+    public override void OnDestroyView()
+    {
+        base.OnDestroyView();
+        StopAutoRefresh();
+    }
+
+    private void StartAutoRefresh()
+    {
+        StopAutoRefresh();
+        _refreshCts = new CancellationTokenSource();
+        _ = AutoRefreshLoop(_refreshCts.Token);
+    }
+
+    private void StopAutoRefresh()
+    {
+        _refreshCts?.Cancel();
+        _refreshCts?.Dispose();
+        _refreshCts = null;
+    }
+
+    private async Task AutoRefreshLoop(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            try
+            {
+                await Task.Delay(LiveRefreshIntervalMs, ct);
+
+                if (ct.IsCancellationRequested)
+                    break;
+
+                // Só atualiza se houver jogos ao vivo
+                if (_knockoutGames.Any(g => g.IsLive))
+                {
+                    RunOnUi(() =>
+                    {
+                        if (_swipeRefresh != null && !_swipeRefresh.Refreshing)
+                            _swipeRefresh.Refreshing = true;
+                    });
+
+                    await LoadDataAsync(forceRefresh: true);
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                break;
+            }
+            catch
+            {
+                // Ignora erros de rede, continua o loop
+            }
+        }
+    }
+
+    // ────────── Carregamento de dados ──────────
+
     private async Task LoadDataAsync(bool forceRefresh = false)
     {
         RunOnUi(() => ShowLoading(true));
@@ -148,6 +222,8 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
             });
         }
     }
+
+    // ────────── DatePicker ──────────
 
     private void OnDatePickerButtonClick(object? sender, EventArgs e)
     {
@@ -261,6 +337,8 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
         }
     }
 
+    // ────────── Aplicar filtro ──────────
+
     private void ApplyFilter()
     {
         IEnumerable<Game> filtered = _knockoutGames;
@@ -320,6 +398,8 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
         if (_adapter != null)
             _adapter.SetItems(items);
     }
+
+    // ────────── Helpers de UI ──────────
 
     private void ShowLoading(bool show)
     {
