@@ -51,6 +51,14 @@ public class OpenFootballScore
 
     [JsonPropertyName("ht")]
     public int[]? HalfTime { get; set; }
+
+    /// <summary>Placar da prorrogação (extra time). Ex: [1, 1] significa 1-1 na prorrogação.</summary>
+    [JsonPropertyName("et")]
+    public int[]? ExtraTime { get; set; }
+
+    /// <summary>Placar dos pênaltis. Ex: [3, 4] significa 3-4 nos pênaltis.</summary>
+    [JsonPropertyName("p")]
+    public int[]? Penalties { get; set; }
 }
 
 public class OpenFootballGoal

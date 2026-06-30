@@ -31,25 +31,35 @@ public class OpenFootballClient
         var groupLetter = match.Group?.Replace("Group ", "", StringComparison.OrdinalIgnoreCase).Trim() ?? "";
 
         var stage = isKnockout ? InferKnockoutType(match.Round) : "group";
-        var ft = match.Score?.FullTime;
+        var sc = match.Score;
+        var ft = sc?.FullTime;
+        var pen = sc?.Penalties;
+
+        // Placar final (ft inclui gols da prorrogação, se houver)
+        var hasScore = ft != null && ft.Length >= 2;
+
+        var homeScore = hasScore ? ft![0] : 0;
+        var awayScore = hasScore ? ft![1] : 0;
 
         return new Game
         {
             Id = id.ToString(),
             HomeTeamNameEn = match.Team1,
             AwayTeamNameEn = match.Team2,
-            HomeScore = ft != null && ft.Length > 0 ? ft[0].ToString() : "0",
-            AwayScore = ft != null && ft.Length > 1 ? ft[1].ToString() : "0",
+            HomeScore = homeScore.ToString(),
+            AwayScore = awayScore.ToString(),
             HomeScorers = FormatGoals(match.Goals1),
             AwayScorers = FormatGoals(match.Goals2),
             Group = isKnockout ? stage.ToUpperInvariant() : groupLetter,
             Matchday = match.Round,
             LocalDate = $"{match.Date} {match.Time}",
-            Finished = ft != null ? "TRUE" : "FALSE",
-            TimeElapsed = ft != null ? "finished" : "notstarted",
+            Finished = hasScore ? "TRUE" : "FALSE",
+            TimeElapsed = hasScore ? "finished" : "notstarted",
             Type = stage,
             HomeTeamId = "1",
-            AwayTeamId = "2"
+            AwayTeamId = "2",
+            HomePenaltyScore = pen != null && pen.Length >= 2 ? pen[0] : null,
+            AwayPenaltyScore = pen != null && pen.Length >= 2 ? pen[1] : null,
         };
     }
 
