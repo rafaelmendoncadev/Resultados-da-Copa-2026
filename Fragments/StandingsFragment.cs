@@ -1,9 +1,9 @@
-using Android.OS;
 using Android.Views;
 using AndroidX.Fragment.App;
 using AndroidX.RecyclerView.Widget;
 using AndroidX.SwipeRefreshLayout.Widget;
 using Resultados_da_Copa_2026.Adapters;
+using Resultados_da_Copa_2026.Helpers;
 using Resultados_da_Copa_2026.Models;
 using Resultados_da_Copa_2026.Services;
 
@@ -49,22 +49,29 @@ public class StandingsFragment : AndroidX.Fragment.App.Fragment
 
     private async Task LoadDataAsync(bool forceRefresh = false)
     {
-        ShowLoading(true);
+        RunOnUi(() => ShowLoading(true));
         try
         {
             var result = await _repository!.GetGroupsAsync(RequireContext(), forceRefresh);
-            _adapter!.SetGroups(result.Data);
-            DataLoaded?.Invoke(result);
-            ShowError(result.Data.Count == 0);
+            RunOnUi(() =>
+            {
+                _adapter!.SetGroups(result.Data);
+                DataLoaded?.Invoke(result);
+                ShowError(result.Data.Count == 0);
+            });
         }
         catch
         {
-            ShowError(true);
+            RunOnUi(() => ShowError(true));
         }
         finally
         {
-            ShowLoading(false);
-            _swipeRefresh!.Refreshing = false;
+            RunOnUi(() =>
+            {
+                ShowLoading(false);
+                if (_swipeRefresh != null)
+                    _swipeRefresh.Refreshing = false;
+            });
         }
     }
 
@@ -80,4 +87,7 @@ public class StandingsFragment : AndroidX.Fragment.App.Fragment
         _errorLayout!.Visibility = show ? ViewStates.Visible : ViewStates.Gone;
         _recyclerView!.Visibility = show ? ViewStates.Gone : ViewStates.Visible;
     }
+
+    private void RunOnUi(Action action) =>
+        UiHelper.RunOnUiThreadSafe(Activity, action);
 }

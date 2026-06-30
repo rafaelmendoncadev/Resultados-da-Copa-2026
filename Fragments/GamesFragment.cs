@@ -1,10 +1,10 @@
-using Android.OS;
 using Android.Views;
 using AndroidX.Fragment.App;
 using AndroidX.RecyclerView.Widget;
 using AndroidX.SwipeRefreshLayout.Widget;
 using Google.Android.Material.Chip;
 using Resultados_da_Copa_2026.Adapters;
+using Resultados_da_Copa_2026.Helpers;
 using Resultados_da_Copa_2026.Models;
 using Resultados_da_Copa_2026.Services;
 
@@ -62,33 +62,39 @@ public class GamesFragment : AndroidX.Fragment.App.Fragment
 
     private async Task LoadDataAsync(bool forceRefresh = false)
     {
-        ShowLoading(true);
+        RunOnUi(() => ShowLoading(true));
         try
         {
             var result = await _repository!.GetGamesAsync(RequireContext(), forceRefresh);
             _allGames = result.Data.Where(g => g.Stage == MatchStage.Group).ToList();
 
-            // Carrega estádios para conversão de fuso horário
             _stadiumCities = (await _repository.GetStadiumsAsync(RequireContext(), forceRefresh)).Data
                 .Where(s => s.CityEn != null)
                 .ToDictionary(s => s.Id, s => s.CityEn!);
 
-            if (_adapter != null)
-                _adapter.StadiumCities = _stadiumCities;
+            RunOnUi(() =>
+            {
+                if (_adapter != null)
+                    _adapter.StadiumCities = _stadiumCities;
 
-            DataLoaded?.Invoke(result);
-            SetupGroupChips();
-            ApplyFilter();
-            ShowError(_allGames.Count == 0);
+                DataLoaded?.Invoke(result);
+                SetupGroupChips();
+                ApplyFilter();
+                ShowError(_allGames.Count == 0);
+            });
         }
         catch
         {
-            ShowError(true);
+            RunOnUi(() => ShowError(true));
         }
         finally
         {
-            ShowLoading(false);
-            _swipeRefresh!.Refreshing = false;
+            RunOnUi(() =>
+            {
+                ShowLoading(false);
+                if (_swipeRefresh != null)
+                    _swipeRefresh.Refreshing = false;
+            });
         }
     }
 
@@ -106,7 +112,8 @@ public class GamesFragment : AndroidX.Fragment.App.Fragment
 
     private void AddGroupChip(string? group, string label)
     {
-        var chip = new Chip(RequireContext())
+        var themedContext = new Android.Views.ContextThemeWrapper(RequireContext(), Resource.Style.Widget_MaterialComponents_Chip_Filter);
+        var chip = new Chip(themedContext)
         {
             Text = label,
             Checkable = true,
@@ -150,4 +157,7 @@ public class GamesFragment : AndroidX.Fragment.App.Fragment
         _errorLayout!.Visibility = show ? ViewStates.Visible : ViewStates.Gone;
         _recyclerView!.Visibility = show ? ViewStates.Gone : ViewStates.Visible;
     }
+
+    private void RunOnUi(Action action) =>
+        UiHelper.RunOnUiThreadSafe(Activity, action);
 }

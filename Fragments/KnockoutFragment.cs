@@ -6,6 +6,7 @@ using AndroidX.RecyclerView.Widget;
 using AndroidX.SwipeRefreshLayout.Widget;
 using Google.Android.Material.Chip;
 using Resultados_da_Copa_2026.Adapters;
+using Resultados_da_Copa_2026.Helpers;
 using Resultados_da_Copa_2026.Models;
 using Resultados_da_Copa_2026.Services;
 
@@ -106,18 +107,14 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
 
     private async Task LoadDataAsync(bool forceRefresh = false)
     {
-        ShowLoading(true);
+        RunOnUi(() => ShowLoading(true));
         try
         {
             var result = await _repository!.GetGamesAsync(RequireContext(), forceRefresh);
 
-            // Carrega estádios para conversão de fuso horário
             _stadiumCities = (await _repository.GetStadiumsAsync(RequireContext(), forceRefresh)).Data
                 .Where(s => s.CityEn != null)
                 .ToDictionary(s => s.Id, s => s.CityEn!);
-
-            if (_adapter != null)
-                _adapter.StadiumCities = _stadiumCities;
 
             _knockoutGames = result.Data
                 .Where(g => KnockoutStages.Contains(g.Stage))
@@ -125,25 +122,35 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
                 .ThenBy(g => int.TryParse(g.Id, out var id) ? id : 999)
                 .ToList();
 
-            ApplyFilter();
-
-            DataLoaded?.Invoke(new DataResult<List<Game>>
+            RunOnUi(() =>
             {
-                Data = _knockoutGames,
-                FromCache = result.FromCache,
-                CachedAt = result.CachedAt,
-                IsOffline = result.IsOffline
+                if (_adapter != null)
+                    _adapter.StadiumCities = _stadiumCities;
+
+                ApplyFilter();
+
+                DataLoaded?.Invoke(new DataResult<List<Game>>
+                {
+                    Data = _knockoutGames,
+                    FromCache = result.FromCache,
+                    CachedAt = result.CachedAt,
+                    IsOffline = result.IsOffline
+                });
+                ShowError(_knockoutGames.Count == 0);
             });
-            ShowError(_knockoutGames.Count == 0);
         }
         catch
         {
-            ShowError(true);
+            RunOnUi(() => ShowError(true));
         }
         finally
         {
-            ShowLoading(false);
-            _swipeRefresh!.Refreshing = false;
+            RunOnUi(() =>
+            {
+                ShowLoading(false);
+                if (_swipeRefresh != null)
+                    _swipeRefresh.Refreshing = false;
+            });
         }
     }
 
@@ -348,4 +355,7 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
         if (_recyclerView != null)
             _recyclerView.Visibility = show ? ViewStates.Gone : ViewStates.Visible;
     }
+
+    private void RunOnUi(Action action) =>
+        UiHelper.RunOnUiThreadSafe(Activity, action);
 }

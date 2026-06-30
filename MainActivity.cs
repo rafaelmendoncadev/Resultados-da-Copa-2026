@@ -1,13 +1,14 @@
 using Android.OS;
-using AndroidX.Fragment.App;
+using AndroidX.AppCompat.App;
 using Google.Android.Material.BottomNavigation;
+using Google.Android.Material.Navigation;
 using Resultados_da_Copa_2026.Fragments;
 using Resultados_da_Copa_2026.Services;
 
 namespace Resultados_da_Copa_2026;
 
-[Activity(Label = "@string/app_name", MainLauncher = true, Theme = "@style/AppTheme")]
-public class MainActivity : FragmentActivity
+[Activity(Label = "@string/app_name", MainLauncher = true, Theme = "@style/AppTheme", Exported = true)]
+public class MainActivity : AppCompatActivity
 {
     private GamesFragment? _gamesFragment;
     private StandingsFragment? _standingsFragment;
@@ -51,26 +52,37 @@ public class MainActivity : FragmentActivity
         }
 
         var bottomNav = FindViewById<BottomNavigationView>(Resource.Id.bottomNavigation)!;
-        bottomNav.ItemSelected += (_, e) =>
+        bottomNav.SetOnItemSelectedListener(new BottomNavListener(this));
+    }
+
+    private void SwitchTab(AndroidX.Fragment.App.Fragment? target)
+    {
+        if (target == null || target == _activeFragment)
+            return;
+
+        SupportFragmentManager.BeginTransaction()
+            .Hide(_activeFragment!)
+            .Show(target)
+            .Commit();
+
+        _activeFragment = target;
+    }
+
+    private sealed class BottomNavListener(MainActivity activity) : Java.Lang.Object, NavigationBarView.IOnItemSelectedListener
+    {
+        public bool OnNavigationItemSelected(Android.Views.IMenuItem item)
         {
-            var target = e.Item.ItemId switch
+            var target = item.ItemId switch
             {
-                Resource.Id.nav_games => (AndroidX.Fragment.App.Fragment?)_gamesFragment,
-                Resource.Id.nav_standings => _standingsFragment,
-                Resource.Id.nav_knockout => _knockoutFragment,
+                Resource.Id.nav_games => (AndroidX.Fragment.App.Fragment?)activity._gamesFragment,
+                Resource.Id.nav_standings => activity._standingsFragment,
+                Resource.Id.nav_knockout => activity._knockoutFragment,
                 _ => null
             };
 
-            if (target == null || target == _activeFragment)
-                return;
-
-            SupportFragmentManager.BeginTransaction()
-                .Hide(_activeFragment!)
-                .Show(target)
-                .Commit();
-
-            _activeFragment = target;
-        };
+            activity.SwitchTab(target);
+            return true;
+        }
     }
 
     private void UpdateStatusBanner(DataResult<List<Models.Game>> result) =>

@@ -1,11 +1,13 @@
 using Android.OS;
+using AndroidX.AppCompat.App;
+using Resultados_da_Copa_2026.Helpers;
 using Resultados_da_Copa_2026.Models;
 using Resultados_da_Copa_2026.Services;
 
 namespace Resultados_da_Copa_2026.Activities;
 
 [Activity(Label = "@string/app_name", Theme = "@style/AppTheme")]
-public class GameDetailActivity : Activity
+public class GameDetailActivity : AppCompatActivity
 {
     public const string ExtraGameId = "game_id";
 
@@ -24,21 +26,32 @@ public class GameDetailActivity : Activity
         ActionBar?.SetDisplayHomeAsUpEnabled(true);
         Title = "Detalhe do jogo";
 
-        var repository = new MatchRepository(this);
-        var game = await repository.GetGameByIdAsync(this, gameId);
-        if (game == null)
+        try
+        {
+            var repository = new MatchRepository(this);
+            var game = await repository.GetGameByIdAsync(this, gameId);
+            if (game == null)
+            {
+                Finish();
+                return;
+            }
+
+            var stadiums = await repository.GetStadiumsAsync(this);
+            var stadiumCities = stadiums.Data
+                .Where(s => s.CityEn != null)
+                .ToDictionary(s => s.Id, s => s.CityEn!);
+            var stadiumName = stadiums.Data.FirstOrDefault(s => s.Id == game.StadiumId)?.NameEn;
+
+            UiHelper.RunOnUiThreadSafe(this, () => BindGame(game, stadiumName, stadiumCities));
+        }
+        catch
         {
             Finish();
-            return;
         }
+    }
 
-        // Carrega estádios para conversão de fuso horário e nome do estádio
-        var stadiums = await repository.GetStadiumsAsync(this);
-        var stadiumCities = stadiums.Data
-            .Where(s => s.CityEn != null)
-            .ToDictionary(s => s.Id, s => s.CityEn!);
-        var stadiumName = stadiums.Data.FirstOrDefault(s => s.Id == game.StadiumId)?.NameEn;
-
+    private void BindGame(Models.Game game, string? stadiumName, Dictionary<string, string> stadiumCities)
+    {
         FindViewById<TextView>(Resource.Id.homeTeamText)!.Text = GameDisplayHelper.GetHomeName(game);
         FindViewById<TextView>(Resource.Id.awayTeamText)!.Text = GameDisplayHelper.GetAwayName(game);
         FindViewById<TextView>(Resource.Id.scoreText)!.Text = GameDisplayHelper.FormatScore(game);
