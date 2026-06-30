@@ -19,13 +19,9 @@ public class GamesFragment : AndroidX.Fragment.App.Fragment
     private ProgressBar? _progressBar;
     private View? _errorLayout;
     private ChipGroup? _groupChipGroup;
-    private ChipGroup? _dateChipGroup;
     private List<Game> _allGames = [];
     private Dictionary<string, string>? _stadiumCities;
     private string? _selectedGroup;
-    private string? _selectedDate;     // "dd/MM" ou null (todas) ou "__live__"
-
-    private const string LiveFilterKey = "__live__";
 
     public event Action<DataResult<List<Game>>>? DataLoaded;
 
@@ -43,7 +39,6 @@ public class GamesFragment : AndroidX.Fragment.App.Fragment
         _progressBar = view.FindViewById<ProgressBar>(Resource.Id.progressBar);
         _errorLayout = view.FindViewById(Resource.Id.errorLayout);
         _groupChipGroup = view.FindViewById<ChipGroup>(Resource.Id.groupChipGroup);
-        _dateChipGroup = view.FindViewById<ChipGroup>(Resource.Id.dateChipGroup);
 
         _adapter = new GameListAdapter();
         _adapter.ItemClick += game =>
@@ -83,7 +78,6 @@ public class GamesFragment : AndroidX.Fragment.App.Fragment
 
             DataLoaded?.Invoke(result);
             SetupGroupChips();
-            SetupDateChips();
             ApplyFilter();
             ShowError(_allGames.Count == 0);
         }
@@ -97,8 +91,6 @@ public class GamesFragment : AndroidX.Fragment.App.Fragment
             _swipeRefresh!.Refreshing = false;
         }
     }
-
-    // ────────── Filtro por GRUPO ──────────
 
     private void SetupGroupChips()
     {
@@ -129,102 +121,22 @@ public class GamesFragment : AndroidX.Fragment.App.Fragment
         _groupChipGroup!.AddView(chip);
     }
 
-    // ────────── Filtro por DATA / AO VIVO ──────────
-
-    private void SetupDateChips()
-    {
-        if (_dateChipGroup == null)
-            return;
-
-        _dateChipGroup.RemoveAllViews();
-
-        // Chip "Ao Vivo"
-        AddDateChip(LiveFilterKey, GetString(Resource.String.filter_live)!);
-
-        // Chip "Todas as datas"
-        AddDateChip(null, GetString(Resource.String.filter_date_all)!);
-
-        // Chip para cada data distinta
-        foreach (var dateKey in ObterDatasDistintas())
-            AddDateChip(dateKey, dateKey);
-    }
-
-    private List<string> ObterDatasDistintas()
-    {
-        return _allGames
-            .Select(g => GameDisplayHelper.FormatShortDate(g.LocalDate, g.StadiumId, _stadiumCities))
-            .Distinct()
-            .OrderBy(d => d)
-            .ToList();
-    }
-
-    private void AddDateChip(string? key, string label)
-    {
-        var chip = new Chip(RequireContext())
-        {
-            Text = label,
-            Checkable = true,
-            Checked = key == _selectedDate || (key == null && _selectedDate == null)
-        };
-        chip.SetChipBackgroundColorResource(Resource.Color.wc_background);
-        chip.Click += (_, _) =>
-        {
-            _selectedDate = key;
-            ApplyFilter();
-        };
-        _dateChipGroup!.AddView(chip);
-    }
-
-    // ────────── Aplicar filtros combinados ──────────
-
     private void ApplyFilter()
     {
-        IEnumerable<Game> filtered = _allGames;
+        var filtered = string.IsNullOrEmpty(_selectedGroup)
+            ? _allGames
+            : _allGames.Where(g => g.Group == _selectedGroup).ToList();
 
-        // Filtro de grupo
-        if (!string.IsNullOrEmpty(_selectedGroup))
-            filtered = filtered.Where(g => g.Group == _selectedGroup);
-
-        // Filtro de data / ao vivo
-        if (_selectedDate == LiveFilterKey)
-        {
-            // Mostra apenas jogos AO VIVO
-            filtered = filtered.Where(g => g.IsLive);
-        }
-        else if (_selectedDate != null)
-        {
-            // Filtra pela data (dd/MM em Brasília)
-            filtered = filtered.Where(g =>
-            {
-                var dateKey = GameDisplayHelper.FormatShortDate(g.LocalDate, g.StadiumId, _stadiumCities);
-                return dateKey == _selectedDate;
-            });
-        }
-
-        // Monta os itens agrupados
         var items = new List<GameListItem>();
-
-        if (_selectedDate == LiveFilterKey)
+        foreach (var group in filtered.GroupBy(g => g.Group).OrderBy(g => g.Key))
         {
-            // Ao vivo: sem cabeçalho de grupo
-            foreach (var game in filtered.OrderBy(g => g.LocalDate))
+            items.Add(new GameListItem { IsHeader = true, HeaderText = $"Grupo {group.Key}" });
+            foreach (var game in group.OrderBy(g => g.LocalDate))
                 items.Add(new GameListItem { IsHeader = false, Game = game });
-        }
-        else
-        {
-            // Agrupa por grupo
-            foreach (var group in filtered.GroupBy(g => g.Group).OrderBy(g => g.Key))
-            {
-                items.Add(new GameListItem { IsHeader = true, HeaderText = $"Grupo {group.Key}" });
-                foreach (var game in group.OrderBy(g => g.LocalDate))
-                    items.Add(new GameListItem { IsHeader = false, Game = game });
-            }
         }
 
         _adapter!.SetItems(items);
     }
-
-    // ────────── Helpers de UI ──────────
 
     private void ShowLoading(bool show)
     {

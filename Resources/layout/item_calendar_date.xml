@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/calendarDateCard"
+    android:layout_width="64dp"
+    android:layout_height="80dp"
+    android:layout_marginEnd="8dp"
+    app:cardCornerRadius="10dp"
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="@color/wc_card"
+    app:strokeWidth="0dp"
+    app:strokeColor="@color/wc_green_dark"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="4dp">
+
+        <TextView
+            android:id="@+id/dayNameText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="11sp"
+            android:textColor="@color/wc_text_secondary"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/dayNumberText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="@color/wc_text_primary" />
+
+        <TextView
+            android:id="@+id/monthText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="10sp"
+            android:textColor="@color/wc_text_secondary" />
+
+        <View
+            android:id="@+id/gameDot"
+            android:layout_width="6dp"
+            android:layout_height="6dp"
+            android:layout_marginTop="3dp"
+            android:background="@drawable/circle_green"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

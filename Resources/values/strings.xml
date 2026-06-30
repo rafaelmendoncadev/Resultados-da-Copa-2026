@@ -27,5 +27,7 @@
     <string name="live_badge">AO VIVO</string>
     <string name="filter_live">Ao Vivo</string>
     <string name="filter_date_all">Todas as datas</string>
+    <string name="calendar_filter_label">Filtrar por data</string>
+    <string name="calendar_all">Todas</string>
     <string name="vs">vs</string>
 </resources>

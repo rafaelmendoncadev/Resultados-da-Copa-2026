@@ -1,53 +1,111 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/swipeRefresh"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <FrameLayout
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:padding="8dp" />
-
-        <ProgressBar
-            android:id="@+id/progressBar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:visibility="gone" />
-
+        <!-- Faixa do calendário horizontal -->
         <LinearLayout
-            android:id="@+id/errorLayout"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="24dp"
-            android:visibility="gone">
+            android:paddingTop="8dp"
+            android:paddingBottom="4dp"
+            android:background="@color/wc_white">
 
+            <!-- Rótulo "Filtrar por data" -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/error_loading"
-                android:textSize="16sp"
-                android:textColor="@color/wc_text_secondary" />
+                android:text="@string/calendar_filter_label"
+                android:textSize="11sp"
+                android:textColor="@color/wc_text_secondary"
+                android:textStyle="bold"
+                android:paddingHorizontal="12dp"
+                android:paddingBottom="6dp" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/retryButton"
+            <!-- Calendário horizontal -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/calendarRecycler"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:clipToPadding="false"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:nestedScrollingEnabled="false" />
+
+            <!-- Chip Ao Vivo -->
+            <com.google.android.material.chip.Chip
+                android:id="@+id/liveChip"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="@string/retry" />
+                android:layout_marginStart="12dp"
+                android:layout_marginTop="6dp"
+                android:text="@string/filter_live"
+                app:chipBackgroundColor="@color/wc_background"
+                app:chipStrokeWidth="1dp"
+                app:chipStrokeColor="@color/wc_live"
+                app:chipIconTint="@color/wc_live"
+                app:iconStartPadding="4dp"
+                app:textEndPadding="8dp"
+                android:checkable="true"
+                android:checked="false" />
 
         </LinearLayout>
 
-    </FrameLayout>
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:padding="8dp" />
+
+            <ProgressBar
+                android:id="@+id/progressBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/errorLayout"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="24dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/error_loading"
+                    android:textSize="16sp"
+                    android:textColor="@color/wc_text_secondary" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/retryButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/retry" />
+
+            </LinearLayout>
+
+        </FrameLayout>
+
+    </LinearLayout>
 
 </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

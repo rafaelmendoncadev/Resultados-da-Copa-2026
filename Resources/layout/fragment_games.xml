@@ -15,30 +15,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:scrollbars="none"
-            android:paddingHorizontal="8dp"
-            android:paddingTop="8dp"
+            android:padding="8dp"
             android:background="@color/wc_white">
 
             <com.google.android.material.chip.ChipGroup
                 android:id="@+id/groupChipGroup"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:singleSelection="true"
-                xmlns:app="http://schemas.android.com/apk/res-auto" />
-
-        </HorizontalScrollView>
-
-        <!-- Filtro de data / ao vivo -->
-        <HorizontalScrollView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:scrollbars="none"
-            android:paddingHorizontal="8dp"
-            android:paddingBottom="8dp"
-            android:background="@color/wc_white">
-
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/dateChipGroup"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 app:singleSelection="true"
