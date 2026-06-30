@@ -1,3 +1,4 @@
+using Android.App;
 using Android.OS;
 using Android.Views;
 using AndroidX.Fragment.App;
@@ -14,17 +15,21 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
 {
     private MatchRepository? _repository;
     private GameListAdapter? _adapter;
-    private CalendarDateAdapter? _calendarAdapter;
     private SwipeRefreshLayout? _swipeRefresh;
     private RecyclerView? _recyclerView;
-    private RecyclerView? _calendarRecycler;
     private ProgressBar? _progressBar;
     private View? _errorLayout;
     private Chip? _liveChip;
+    private global::Google.Android.Material.Button.MaterialButton? _datePickerButton;
     private Dictionary<string, string>? _stadiumCities;
     private List<Game> _knockoutGames = [];
-    private string? _selectedDate;   // "dd/MM" ou null (todas)
+    private DateTime? _selectedDate;   // data selecionada no calendário (em Brasília)
     private bool _showLiveOnly;
+
+    // Ano da Copa 2026
+    private const int CopaYear = 2026;
+    private const int CopaMonthStart = 6;  // Junho
+    private const int CopaMonthEnd = 7;    // Julho
 
     public event Action<DataResult<List<Game>>>? DataLoaded;
 
@@ -38,13 +43,6 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
         MatchStage.Final
     ];
 
-    // Dias da semana em português (abreviado)
-    private static readonly string[] DiaSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-
-    // Meses abreviados em português
-    private static readonly string[] Meses = ["", "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
-        "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-
     public override View? OnCreateView(LayoutInflater inflater, ViewGroup? container, Bundle? savedInstanceState)
     {
         return inflater.Inflate(Resource.Layout.fragment_knockout, container, false);
@@ -56,10 +54,10 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
         _repository = new MatchRepository(RequireContext());
         _swipeRefresh = view.FindViewById<SwipeRefreshLayout>(Resource.Id.swipeRefresh);
         _recyclerView = view.FindViewById<RecyclerView>(Resource.Id.recyclerView);
-        _calendarRecycler = view.FindViewById<RecyclerView>(Resource.Id.calendarRecycler);
         _progressBar = view.FindViewById<ProgressBar>(Resource.Id.progressBar);
         _errorLayout = view.FindViewById(Resource.Id.errorLayout);
         _liveChip = view.FindViewById<Chip>(Resource.Id.liveChip);
+        _datePickerButton = view.FindViewById<global::Google.Android.Material.Button.MaterialButton>(Resource.Id.datePickerButton);
 
         // Adapter da lista de jogos
         _adapter = new GameListAdapter();
@@ -72,12 +70,12 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
         _recyclerView!.SetLayoutManager(new LinearLayoutManager(RequireContext()));
         _recyclerView.SetAdapter(_adapter);
 
-        // Adapter do calendário horizontal
-        _calendarAdapter = new CalendarDateAdapter(RequireContext());
-        _calendarAdapter.DateClick += OnCalendarDateClick;
-        _calendarRecycler!.SetLayoutManager(
-            new LinearLayoutManager(RequireContext(), LinearLayoutManager.Horizontal, false));
-        _calendarRecycler.SetAdapter(_calendarAdapter);
+        // Botão do calendário
+        if (_datePickerButton != null)
+        {
+            UpdateDateButtonText();
+            _datePickerButton.Click += OnDatePickerButtonClick;
+        }
 
         // Chip Ao Vivo
         if (_liveChip != null)
@@ -89,7 +87,7 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
                 if (_showLiveOnly)
                 {
                     _selectedDate = null;
-                    _calendarAdapter!.UpdateSelection(null);
+                    UpdateDateButtonText();
                 }
                 ApplyFilter();
             };
@@ -98,7 +96,7 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
         _swipeRefresh!.SetColorSchemeResources(Resource.Color.wc_green_dark);
         _swipeRefresh.Refresh += async (_, _) => await LoadDataAsync(forceRefresh: true);
 
-        view.FindViewById<Google.Android.Material.Button.MaterialButton>(Resource.Id.retryButton)!
+        view.FindViewById<global::Google.Android.Material.Button.MaterialButton>(Resource.Id.retryButton)!
             .Click += async (_, _) => await LoadDataAsync(forceRefresh: true);
 
         _ = LoadDataAsync();
@@ -127,7 +125,6 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
                 .ThenBy(g => int.TryParse(g.Id, out var id) ? id : 999)
                 .ToList();
 
-            SetupCalendar();
             ApplyFilter();
 
             DataLoaded?.Invoke(new DataResult<List<Game>>
@@ -150,68 +147,96 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
         }
     }
 
-    // ────────── Calendário horizontal ──────────
+    // ────────── DatePickerDialog ──────────
 
-    private void SetupCalendar()
+    // ────────── DatePicker via AlertDialog ──────────
+
+    private void OnDatePickerButtonClick(object? sender, EventArgs e)
     {
-        if (_calendarAdapter == null)
+        if (_selectedDate.HasValue)
+        {
+            ShowDatePickerWithClearOption();
             return;
+        }
 
-        // Agrupa jogos por data (dd/MM em Brasília)
-        var dateGroups = _knockoutGames
-            .GroupBy(g => GameDisplayHelper.FormatShortDate(g.LocalDate, g.StadiumId, _stadiumCities))
-            .OrderBy(g => g.Key)
-            .ToList();
+        ShowDatePicker();
+    }
 
-        var items = new List<CalendarDateItem>();
+    private void ShowDatePicker()
+    {
+        var now = DateTime.Now;
+        var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-        // Item "Todas" (sem filtro)
-        items.Add(new CalendarDateItem
+        var initialYear = CopaYear;
+        var initialMonth = now.Year == CopaYear && now.Month >= CopaMonthStart && now.Month <= CopaMonthEnd
+            ? now.Month - 1  // DatePicker usa 0-based para mês
+            : CopaMonthStart - 1;
+        var initialDay = now.Year == CopaYear && (now.Month - 1) == initialMonth
+            ? Math.Clamp(now.Day, 1, 30)
+            : 11;
+
+        var datePicker = new DatePicker(RequireContext());
+        datePicker.UpdateDate(initialYear, initialMonth, initialDay);
+
+        // Limita o calendário a Junho e Julho de 2026
+        var minDate = new DateTime(CopaYear, CopaMonthStart, 1, 0, 0, 0, DateTimeKind.Utc);
+        var maxDate = new DateTime(CopaYear, CopaMonthEnd, 31, 23, 59, 59, DateTimeKind.Utc);
+        datePicker.MinDate = (long)(minDate - epoch).TotalMilliseconds;
+        datePicker.MaxDate = (long)(maxDate - epoch).TotalMilliseconds;
+
+        var builder = new AlertDialog.Builder(RequireContext());
+        builder.SetTitle(GetString(Resource.String.date_picker_label));
+        builder.SetView(datePicker);
+        builder.SetPositiveButton("OK", (_, _) =>
         {
-            DateKey = null!,  // todas
-            DayName = null,
-            DayNumber = GetString(Resource.String.calendar_all)!,
-            Month = "",
-            HasGames = true,
-            IsSelected = _selectedDate == null && !_showLiveOnly
+            OnDateSelected(datePicker.Year, datePicker.Month, datePicker.DayOfMonth);
         });
+        builder.SetNegativeButton("Cancelar", (_, _) => { });
+        builder.Show();
+    }
 
-        foreach (var group in dateGroups)
+    private void ShowDatePickerWithClearOption()
+    {
+        var items = new List<string>
         {
-            if (DateTime.TryParseExact(group.Key, "dd/MM",
-                System.Globalization.CultureInfo.InvariantCulture,
-                System.Globalization.DateTimeStyles.None, out var dt))
+            GetString(Resource.String.date_picker_clear)!,
+            GetString(Resource.String.date_picker_label)!
+        };
+
+        var builder = new AlertDialog.Builder(RequireContext());
+        builder.SetTitle(string.Format(GetString(Resource.String.date_picker_selected)!,
+            _selectedDate!.Value.ToString("dd/MM/yyyy")));
+        builder.SetItems(items.ToArray(), (_, args) =>
+        {
+            if (args.Which == 0)
             {
-                items.Add(new CalendarDateItem
-                {
-                    DateKey = group.Key,
-                    DayName = DiaSemana[(int)dt.DayOfWeek],
-                    DayNumber = dt.Day.ToString(),
-                    Month = Meses[dt.Month],
-                    HasGames = true,
-                    IsSelected = group.Key == _selectedDate
-                });
+                _selectedDate = null;
+                _showLiveOnly = false;
+                if (_liveChip != null)
+                    _liveChip.Checked = false;
+                UpdateDateButtonText();
+                ApplyFilter();
             }
             else
             {
-                // Fallback: mostra a chave textual
-                items.Add(new CalendarDateItem
-                {
-                    DateKey = group.Key,
-                    DayName = null,
-                    DayNumber = group.Key,
-                    Month = "",
-                    HasGames = true,
-                    IsSelected = group.Key == _selectedDate
-                });
+                ShowDatePicker();
             }
-        }
-
-        _calendarAdapter.SetDates(items);
+        });
+        builder.Show();
     }
 
-    private void OnCalendarDateClick(CalendarDateItem item)
+    private void OnDateSelected(int year, int month, int dayOfMonth)
     {
+        // month do DatePicker é 0-based (Janeiro = 0)
+        var selected = new DateTime(year, month + 1, dayOfMonth);
+
+        if (selected.Year != CopaYear ||
+            selected.Month < CopaMonthStart ||
+            selected.Month > CopaMonthEnd)
+            return;
+
+        _selectedDate = selected;
+
         if (_showLiveOnly)
         {
             _showLiveOnly = false;
@@ -219,9 +244,25 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
                 _liveChip.Checked = false;
         }
 
-        _selectedDate = string.IsNullOrEmpty(item.DateKey) ? null : item.DateKey;
-        _calendarAdapter?.UpdateSelection(_selectedDate);
+        UpdateDateButtonText();
         ApplyFilter();
+    }
+
+    private void UpdateDateButtonText()
+    {
+        if (_datePickerButton == null)
+            return;
+
+        if (_selectedDate.HasValue)
+        {
+            _datePickerButton.Text = string.Format(
+                GetString(Resource.String.date_picker_selected)!,
+                _selectedDate.Value.ToString("dd/MM/yyyy"));
+        }
+        else
+        {
+            _datePickerButton.Text = GetString(Resource.String.date_picker_label);
+        }
     }
 
     // ────────── Aplicar filtro ──────────
@@ -232,20 +273,20 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
 
         if (_showLiveOnly)
         {
-            // Mostra apenas jogos AO VIVO
             filtered = filtered.Where(g => g.IsLive);
         }
-        else if (_selectedDate != null)
+        else if (_selectedDate.HasValue)
         {
             // Filtra por data (dd/MM em Brasília)
+            var targetKey = _selectedDate.Value.ToString("dd/MM");
             filtered = filtered.Where(g =>
             {
                 var dateKey = GameDisplayHelper.FormatShortDate(g.LocalDate, g.StadiumId, _stadiumCities);
-                return dateKey == _selectedDate;
+                return dateKey == targetKey;
             });
         }
 
-        // Monta itens: agrupados por fase quando mostra todas, sem agrupar quando filtrado
+        // Monta itens
         var items = new List<GameListItem>();
 
         if (_showLiveOnly)
@@ -253,7 +294,7 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
             foreach (var game in filtered.OrderBy(g => g.LocalDate))
                 items.Add(new GameListItem { IsHeader = false, Game = game });
         }
-        else if (_selectedDate != null)
+        else if (_selectedDate.HasValue)
         {
             // Filtrado por data: agrupa por fase
             foreach (var stageGroup in filtered
@@ -286,21 +327,25 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
             }
         }
 
-        _adapter!.SetItems(items);
+        if (_adapter != null)
+            _adapter.SetItems(items);
     }
 
     // ────────── Helpers de UI ──────────
 
     private void ShowLoading(bool show)
     {
-        _progressBar!.Visibility = show ? ViewStates.Visible : ViewStates.Gone;
-        if (show)
-            _errorLayout!.Visibility = ViewStates.Gone;
+        if (_progressBar != null)
+            _progressBar.Visibility = show ? ViewStates.Visible : ViewStates.Gone;
+        if (show && _errorLayout != null)
+            _errorLayout.Visibility = ViewStates.Gone;
     }
 
     private void ShowError(bool show)
     {
-        _errorLayout!.Visibility = show ? ViewStates.Visible : ViewStates.Gone;
-        _recyclerView!.Visibility = show ? ViewStates.Gone : ViewStates.Visible;
+        if (_errorLayout != null)
+            _errorLayout.Visibility = show ? ViewStates.Visible : ViewStates.Gone;
+        if (_recyclerView != null)
+            _recyclerView.Visibility = show ? ViewStates.Gone : ViewStates.Visible;
     }
 }

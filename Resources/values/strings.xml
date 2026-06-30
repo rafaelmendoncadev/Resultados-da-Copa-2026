@@ -27,7 +27,9 @@
     <string name="live_badge">AO VIVO</string>
     <string name="filter_live">Ao Vivo</string>
     <string name="filter_date_all">Todas as datas</string>
-    <string name="calendar_filter_label">Filtrar por data</string>
-    <string name="calendar_all">Todas</string>
+    <string name="date_picker_label">📅  Selecionar data</string>
+    <string name="date_picker_selected">📅  %1$s</string>
+    <string name="date_picker_clear">✕  Limpar filtro</string>
+    <string name="calendar_only_june_july">Selecione uma data entre junho e julho de 2026</string>
     <string name="vs">vs</string>
 </resources>

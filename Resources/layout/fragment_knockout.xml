@@ -11,44 +11,38 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <!-- Faixa do calendário horizontal -->
+        <!-- Faixa de filtros -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingTop="8dp"
-            android:paddingBottom="4dp"
+            android:padding="8dp"
             android:background="@color/wc_white">
 
-            <!-- Rótulo "Filtrar por data" -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/calendar_filter_label"
-                android:textSize="11sp"
-                android:textColor="@color/wc_text_secondary"
-                android:textStyle="bold"
-                android:paddingHorizontal="12dp"
-                android:paddingBottom="6dp" />
-
-            <!-- Calendário horizontal -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/calendarRecycler"
+            <!-- Botão de calendário -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/datePickerButton"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:clipToPadding="false"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:nestedScrollingEnabled="false" />
+                android:layout_height="48dp"
+                android:layout_marginHorizontal="4dp"
+                android:text="@string/date_picker_label"
+                android:textSize="14sp"
+                android:textColor="@color/wc_text_primary"
+                app:icon="@android:drawable/ic_menu_month"
+                app:iconGravity="textStart"
+                app:iconTint="@color/wc_green_dark"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                app:strokeColor="@color/wc_green_dark"
+                app:strokeWidth="1dp"
+                app:cornerRadius="8dp" />
 
             <!-- Chip Ao Vivo -->
             <com.google.android.material.chip.Chip
                 android:id="@+id/liveChip"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_marginTop="6dp"
+                android:layout_marginStart="4dp"
+                android:layout_marginTop="8dp"
                 android:text="@string/filter_live"
                 app:chipBackgroundColor="@color/wc_background"
                 app:chipStrokeWidth="1dp"
