@@ -33,30 +33,36 @@ public static class GameDisplayHelper
         return score;
     }
 
-    /// <summary>
-    /// Formata a data/hora no horário original da API (sem conversão de fuso).
-    /// </summary>
-    /// <param name="localDate">Data/hora do jogo vinda da API (formato MM/dd/yyyy HH:mm).</param>
+    private static readonly TimeSpan BrasiliaOffset = TimeSpan.FromHours(-3);
+    private static readonly TimeSpan ApiOffset = TimeSpan.FromHours(-5);
+
     public static string FormatDate(string localDate)
     {
-        if (TryParseApiDate(localDate, out var dt))
+        if (TryParseAndConvertToBrasilia(localDate, out var dt))
             return dt.ToString("dd/MM/yyyy HH:mm");
         return localDate;
     }
 
-    /// <summary>
-    /// Extrai apenas a data (sem hora) no formato dd/MM, usando o horário original da API.
-    /// </summary>
     public static string FormatShortDate(string localDate)
     {
-        if (TryParseApiDate(localDate, out var dt))
+        if (TryParseAndConvertToBrasilia(localDate, out var dt))
             return dt.ToString("dd/MM");
         return localDate;
     }
 
-    /// <summary>
-    /// Tenta interpretar a data da API (formato MM/dd/yyyy HH:mm ou dd/MM/yyyy HH:mm, etc.).
-    /// </summary>
+    private static bool TryParseAndConvertToBrasilia(string localDate, out DateTime result)
+    {
+        if (!TryParseApiDate(localDate, out var parsed))
+        {
+            result = default;
+            return false;
+        }
+
+        var utc = parsed - ApiOffset;
+        result = utc + BrasiliaOffset;
+        return true;
+    }
+
     private static bool TryParseApiDate(string localDate, out DateTime result)
     {
         var formats = new[]
