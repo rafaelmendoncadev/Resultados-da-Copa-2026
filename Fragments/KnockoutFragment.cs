@@ -388,7 +388,7 @@ public class KnockoutFragment : AndroidX.Fragment.App.Fragment
             var targetKey = _selectedDate.Value.ToString("dd/MM");
             filtered = filtered.Where(g =>
             {
-                var dateKey = GameDisplayHelper.FormatShortDate(g.LocalDate);
+                var dateKey = GameDisplayHelper.FormatShortDate(g.LocalDate, g.StadiumId);
                 return dateKey == targetKey;
             });
         }

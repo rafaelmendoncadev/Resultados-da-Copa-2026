@@ -63,7 +63,7 @@ public class GameListAdapter : RecyclerView.Adapter
             gameHolder.HomeTeamText.Text = GameDisplayHelper.GetHomeName(game);
             gameHolder.AwayTeamText.Text = GameDisplayHelper.GetAwayName(game);
             gameHolder.ScoreText.Text = GameDisplayHelper.FormatScore(game);
-            gameHolder.DateText.Text = GameDisplayHelper.FormatDate(game.LocalDate);
+            gameHolder.DateText.Text = GameDisplayHelper.FormatDate(game.LocalDate, game.StadiumId);
             var stageText = game.Stage == MatchStage.Group
                 ? $"Grupo {game.Group} · Rodada {game.Matchday}"
                 : game.Stage.ToDisplayName();

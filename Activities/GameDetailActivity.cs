@@ -57,7 +57,7 @@ public class GameDetailActivity : AppCompatActivity
             stageDisplay += $"\n{qualification}";
         FindViewById<TextView>(Resource.Id.stageText)!.Text = stageDisplay;
         FindViewById<TextView>(Resource.Id.statusText)!.Text = GameDisplayHelper.GetStatusText(game);
-        FindViewById<TextView>(Resource.Id.dateText)!.Text = GameDisplayHelper.FormatDate(game.LocalDate);
+        FindViewById<TextView>(Resource.Id.dateText)!.Text = GameDisplayHelper.FormatDate(game.LocalDate, game.StadiumId);
         FindViewById<TextView>(Resource.Id.stadiumText)!.Text = stadiumName ?? $"Estádio #{game.StadiumId}";
 
         var liveBadge = FindViewById<TextView>(Resource.Id.liveBadge)!;

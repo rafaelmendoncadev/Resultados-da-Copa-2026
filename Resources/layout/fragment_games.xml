@@ -11,21 +11,45 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <!-- Filtro de grupos -->
-        <HorizontalScrollView
+        <!-- Faixa de filtros -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:scrollbars="none"
+            android:orientation="horizontal"
             android:padding="8dp"
-            android:background="@color/wc_white">
+            android:background="@color/wc_white"
+            android:gravity="center_vertical">
 
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/groupChipGroup"
+            <!-- Chip Ao Vivo -->
+            <com.google.android.material.chip.Chip
+                android:id="@+id/liveChip"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:singleSelection="true" />
+                android:text="@string/filter_live"
+                app:chipBackgroundColor="@color/wc_background"
+                app:chipStrokeWidth="1dp"
+                app:chipStrokeColor="@color/wc_live"
+                app:chipIconTint="@color/wc_live"
+                app:iconStartPadding="4dp"
+                app:textEndPadding="8dp"
+                android:checkable="true"
+                android:checked="false" />
 
-        </HorizontalScrollView>
+            <HorizontalScrollView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:scrollbars="none">
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/groupChipGroup"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:singleSelection="true" />
+
+            </HorizontalScrollView>
+
+        </LinearLayout>
 
         <FrameLayout
             android:layout_width="match_parent"

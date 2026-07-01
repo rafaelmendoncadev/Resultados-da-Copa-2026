@@ -19,8 +19,13 @@ public class GamesFragment : AndroidX.Fragment.App.Fragment
     private ProgressBar? _progressBar;
     private View? _errorLayout;
     private ChipGroup? _groupChipGroup;
+    private Chip? _liveChip;
     private List<Game> _allGames = [];
     private string? _selectedGroup;
+    private bool _showLiveOnly;
+
+    private CancellationTokenSource? _refreshCts;
+    private const int LiveRefreshIntervalMs = 60_000;
 
     public event Action<DataResult<List<Game>>>? DataLoaded;
 
@@ -38,6 +43,7 @@ public class GamesFragment : AndroidX.Fragment.App.Fragment
         _progressBar = view.FindViewById<ProgressBar>(Resource.Id.progressBar);
         _errorLayout = view.FindViewById(Resource.Id.errorLayout);
         _groupChipGroup = view.FindViewById<ChipGroup>(Resource.Id.groupChipGroup);
+        _liveChip = view.FindViewById<Chip>(Resource.Id.liveChip);
 
         _adapter = new GameListAdapter();
         _adapter.ItemClick += game =>
@@ -50,6 +56,17 @@ public class GamesFragment : AndroidX.Fragment.App.Fragment
         _recyclerView!.SetLayoutManager(new LinearLayoutManager(RequireContext()));
         _recyclerView.SetAdapter(_adapter);
 
+        if (_liveChip != null)
+        {
+            _liveChip.Checked = _showLiveOnly;
+            _liveChip.Click += (_, _) =>
+            {
+                _showLiveOnly = !_showLiveOnly;
+                _liveChip.Checked = _showLiveOnly;
+                ApplyFilter();
+            };
+        }
+
         _swipeRefresh!.SetColorSchemeResources(Resource.Color.wc_green_dark);
         _swipeRefresh.Refresh += async (_, _) => await LoadDataAsync(forceRefresh: true);
 
@@ -57,6 +74,63 @@ public class GamesFragment : AndroidX.Fragment.App.Fragment
             .Click += async (_, _) => await LoadDataAsync(forceRefresh: true);
 
         _ = LoadDataAsync();
+    }
+
+    public override void OnResume()
+    {
+        base.OnResume();
+        StartAutoRefresh();
+    }
+
+    public override void OnPause()
+    {
+        base.OnPause();
+        StopAutoRefresh();
+    }
+
+    public override void OnDestroyView()
+    {
+        base.OnDestroyView();
+        StopAutoRefresh();
+    }
+
+    private void StartAutoRefresh()
+    {
+        StopAutoRefresh();
+        _refreshCts = new CancellationTokenSource();
+        _ = AutoRefreshLoop(_refreshCts.Token);
+    }
+
+    private void StopAutoRefresh()
+    {
+        _refreshCts?.Cancel();
+        _refreshCts?.Dispose();
+        _refreshCts = null;
+    }
+
+    private async Task AutoRefreshLoop(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            try
+            {
+                await Task.Delay(LiveRefreshIntervalMs, ct);
+                if (ct.IsCancellationRequested) break;
+
+                var hasLive = _allGames.Any(g => g.IsLive);
+                if (hasLive)
+                {
+                    RunOnUi(() =>
+                    {
+                        if (_swipeRefresh != null && !_swipeRefresh.Refreshing)
+                            _swipeRefresh.Refreshing = true;
+                    });
+                    await LoadDataAsync(forceRefresh: true);
+                }
+            }
+            catch (TaskCanceledException) { break; }
+            catch { }
+        }
     }
 
     private async Task LoadDataAsync(bool forceRefresh = false)
@@ -122,16 +196,28 @@ public class GamesFragment : AndroidX.Fragment.App.Fragment
 
     private void ApplyFilter()
     {
-        var filtered = string.IsNullOrEmpty(_selectedGroup)
-            ? _allGames
-            : _allGames.Where(g => g.Group == _selectedGroup).ToList();
+        IEnumerable<Game> filtered = _allGames;
+
+        if (_showLiveOnly)
+            filtered = filtered.Where(g => g.IsLive);
+        else if (!string.IsNullOrEmpty(_selectedGroup))
+            filtered = filtered.Where(g => g.Group == _selectedGroup);
 
         var items = new List<GameListItem>();
-        foreach (var group in filtered.GroupBy(g => g.Group).OrderBy(g => g.Key))
+
+        if (_showLiveOnly)
         {
-            items.Add(new GameListItem { IsHeader = true, HeaderText = $"Grupo {group.Key}" });
-            foreach (var game in group.OrderBy(g => g.LocalDate))
+            foreach (var game in filtered.OrderBy(g => g.LocalDate))
                 items.Add(new GameListItem { IsHeader = false, Game = game });
+        }
+        else
+        {
+            foreach (var group in filtered.GroupBy(g => g.Group).OrderBy(g => g.Key))
+            {
+                items.Add(new GameListItem { IsHeader = true, HeaderText = $"Grupo {group.Key}" });
+                foreach (var game in group.OrderBy(g => g.LocalDate))
+                    items.Add(new GameListItem { IsHeader = false, Game = game });
+            }
         }
 
         _adapter!.SetItems(items);
