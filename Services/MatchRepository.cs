@@ -14,6 +14,7 @@ public class DataResult<T>
 
 public class MatchRepository
 {
+    private const string Tag = "MatchRepository";
     private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(2);
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -153,9 +154,12 @@ public class MatchRepository
                     };
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // fall through to cache/fallback
+                // Falha na API primária (ex.: JSON inválido / rede). Registra para diagnóstico
+                // e continua para o cache/fallback — antes isto era engolido silenciosamente,
+                // o que mascarava mudanças de contrato da API como cache "desatualizado".
+                Android.Util.Log.Warn(Tag, $"fetchPrimary ({cacheFileName}) falhou: {ex.GetType().Name}: {ex.Message}");
             }
         }
 
@@ -191,9 +195,9 @@ public class MatchRepository
                     };
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // no data available
+                Android.Util.Log.Warn(Tag, $"fetchFallback ({cacheFileName}) falhou: {ex.GetType().Name}: {ex.Message}");
             }
         }
 
@@ -212,8 +216,9 @@ public class MatchRepository
             var json = await File.ReadAllTextAsync(path);
             return JsonSerializer.Deserialize<T>(json, JsonOptions);
         }
-        catch
+        catch (Exception ex)
         {
+            Android.Util.Log.Warn(Tag, $"ReadCacheAsync falhou ({path}): {ex.GetType().Name}: {ex.Message}");
             return default;
         }
     }

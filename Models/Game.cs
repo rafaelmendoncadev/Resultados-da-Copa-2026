@@ -59,9 +59,11 @@ public class Game
     public string? AwayTeamLabel { get; set; }
 
     [JsonPropertyName("home_penalty_score")]
+    [JsonConverter(typeof(Services.NullSafeIntConverter))]
     public int? HomePenaltyScore { get; set; }
 
     [JsonPropertyName("away_penalty_score")]
+    [JsonConverter(typeof(Services.NullSafeIntConverter))]
     public int? AwayPenaltyScore { get; set; }
 
     [JsonIgnore]
