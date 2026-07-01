@@ -7,8 +7,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationId>com.companyname.Resultados_da_Copa_2026</ApplicationId>
-    <ApplicationVersion>5</ApplicationVersion>
-    <ApplicationDisplayVersion>1.8</ApplicationDisplayVersion>
+    <ApplicationVersion>6</ApplicationVersion>
+    <ApplicationDisplayVersion>1.9</ApplicationDisplayVersion>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <TrimMode>partial</TrimMode>
   </PropertyGroup>

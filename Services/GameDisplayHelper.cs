@@ -14,6 +14,34 @@ public static class GameDisplayHelper
     private static readonly Regex TimeZoneOffsetRegex =
         new(@"UTC([+-])(\d{1,2})(?::?(\d{2}))?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
+    // Offset UTC de cada estádio da Copa 2026 (em junho/julho, já considerando o
+    // horário de verão dos EUA/Canadá — o México não tem DST). Usado como fallback
+    // quando a API primária (worldcup26.ir) envia "local_date" sem sufixo de fuso,
+    // caso em que o horário vem no fuso local do próprio estádio.
+    private static readonly Dictionary<string, TimeSpan> StadiumOffsets = new()
+    {
+        // México — UTC-6
+        ["1"] = TimeSpan.FromHours(-6),  // Cidade do México
+        ["2"] = TimeSpan.FromHours(-6),  // Guadalajara
+        ["3"] = TimeSpan.FromHours(-6),  // Monterrey
+        // UTC-5 (Dallas, Houston, Kansas City)
+        ["4"] = TimeSpan.FromHours(-5),
+        ["5"] = TimeSpan.FromHours(-5),
+        ["6"] = TimeSpan.FromHours(-5),
+        // UTC-4 (Atlanta, Miami, Boston, Filadélfia, NY/NJ, Toronto)
+        ["7"] = TimeSpan.FromHours(-4),
+        ["8"] = TimeSpan.FromHours(-4),
+        ["9"] = TimeSpan.FromHours(-4),
+        ["10"] = TimeSpan.FromHours(-4),
+        ["11"] = TimeSpan.FromHours(-4),
+        ["12"] = TimeSpan.FromHours(-4),
+        // UTC-7 (Vancouver, Seattle, São Francisco, Los Angeles)
+        ["13"] = TimeSpan.FromHours(-7),
+        ["14"] = TimeSpan.FromHours(-7),
+        ["15"] = TimeSpan.FromHours(-7),
+        ["16"] = TimeSpan.FromHours(-7),
+    };
+
     public static string GetStatusText(Models.Game game)
     {
         if (game.IsLive)
@@ -44,21 +72,22 @@ public static class GameDisplayHelper
 
     public static string FormatDate(string localDate, string? stadiumId = null)
     {
-        if (TryParseAndConvertToBrasilia(localDate, out var dt))
+        if (TryParseAndConvertToBrasilia(localDate, stadiumId, out var dt))
             return dt.ToString("dd/MM/yyyy HH:mm");
         return localDate;
     }
 
     public static string FormatShortDate(string localDate, string? stadiumId = null)
     {
-        if (TryParseAndConvertToBrasilia(localDate, out var dt))
+        if (TryParseAndConvertToBrasilia(localDate, stadiumId, out var dt))
             return dt.ToString("dd/MM");
         return localDate;
     }
 
-    private static bool TryParseAndConvertToBrasilia(string localDate, out DateTime result)
+    private static bool TryParseAndConvertToBrasilia(string localDate, string? stadiumId, out DateTime result)
     {
-        // A string vem como "yyyy-MM-dd HH:mm UTC-6" (o fuso é o do estádio do jogo).
+        // A string pode vir como "yyyy-MM-dd HH:mm UTC-6" (openfootball, com fuso) ou
+        // "MM/dd/yyyy HH:mm" (worldcup26.ir, sem fuso — horário local do estádio).
         var apiOffset = ExtractOffset(localDate, out var withoutTz);
         if (!TryParseApiDate(withoutTz, out var parsed))
         {
@@ -66,11 +95,17 @@ public static class GameDisplayHelper
             return false;
         }
 
-        // Se não houver fuso na string, não converte (preserva o horário original).
+        // Sem fuso na string: tenta o offset do estádio (fallback da API primária).
+        // Se nem isso existir, preserva o horário original.
         if (apiOffset == null)
         {
-            result = parsed;
-            return true;
+            if (stadiumId != null && StadiumOffsets.TryGetValue(stadiumId, out var stadiumOffset))
+                apiOffset = stadiumOffset;
+            else
+            {
+                result = parsed;
+                return true;
+            }
         }
 
         var utc = parsed - apiOffset.Value;
